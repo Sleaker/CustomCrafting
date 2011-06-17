@@ -1,0 +1,11 @@
+name: CustomCrafting
+
+main: nickguletskii200.CustomCrafting.CustomCrafting
+
+description: Add your own custom recipes to the game!
+
+authors:
+  - nickguletskii200
+
+version: 0.6
+  
