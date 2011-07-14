@@ -19,7 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class CustomCrafting extends JavaPlugin {
 	Logger log;
-
+	private String pluginName;
 	// private PermissionHandler Permissions;
 	public CustomCrafting() {
 		super();
@@ -55,9 +55,9 @@ public class CustomCrafting extends JavaPlugin {
 
 	public void onEnable() {
 		log = this.getServer().getLogger();
+		pluginName = "[" + this.getDescription().getName() + "]";
 		RecipeList rl = new RecipeList();
 		rl.load();
-		System.out.println("Loaded CustomCrafting by nickguletskii200.");
 		for (HashMap<String, Object> hm : rl.values()) {
 			if (hm.containsKey("Type")) {
 				if (hm.get("Type").equals("Shaped")) {
@@ -71,27 +71,46 @@ public class CustomCrafting extends JavaPlugin {
 				doShaped(hm);
 			}
 		}
-		System.out.println("Custom recipes added.");
+
+		log.info(pluginName + " - v" + getDescription().getVersion() + " by " + getDescription().getAuthors() + " enabled!");
 	}
 	//Load a shaped recipe
 	@SuppressWarnings("unchecked")
 	public void doShaped(HashMap<String, Object> hm) {
-		Integer resultID = (Integer) hm.get("Result");
-		Integer resultQuantity = (Integer) hm.get("Quantity");
+		Integer resultID;
+		Integer resultQuantity;
+		try {
+		resultID = (Integer) hm.get("Result");
+		resultQuantity = (Integer) hm.get("Quantity");
+		} catch (Exception e) {
+			log.severe(pluginName + " - ERROR result found with non-integer resultID, or Quantity, please fix record with name: " + hm.get("Result"));
+			return;
+		}
+		//Create our variables here.
 		ArrayList<ArrayList<Integer>> shape;
-		if (!hm.containsKey("DataValues")) {
-			shape = (ArrayList<ArrayList<Integer>>) hm.get("Shape");
-		} else {
-			shape = ids((ArrayList<ArrayList<String>>) hm.get("Shape"));
-		}
-		boolean dv = hm.containsKey("DataValues");
 		ArrayList<ArrayList<Byte>> data = null;
-		if (dv) {
-			data = data((ArrayList<ArrayList<String>>) hm.get("Shape"));
-			data = rotateArrayB(data);
+		boolean dv = true;
+
+		//Try to load shape data.
+		try {
+			if (!hm.containsKey("DataValues")) {
+				shape = (ArrayList<ArrayList<Integer>>) hm.get("Shape");
+			} else {
+				shape = ids((ArrayList<ArrayList<String>>) hm.get("Shape"));
+			}
+			dv = hm.containsKey("DataValues");
+			if (dv) {
+				data = data((ArrayList<ArrayList<String>>) hm.get("Shape"));
+				data = rotateArrayB(data);
+			}
+			shape = rotateArray(shape);
+		} catch (Exception e) {
+			log.severe(pluginName + " error parsing shape data in record ID " + resultID);
+			return;
 		}
-		shape = rotateArray(shape);
+
 		char[][] chars = new char[shape.size()][shape.get(0).size()];
+
 		HashMap<String, Character> tmpc = new HashMap<String, Character>();
 		String key = "abcdefghi";
 		for (int x = 0; x < shape.size(); x++) {
@@ -122,20 +141,27 @@ public class CustomCrafting extends JavaPlugin {
 			}
 		}
 		ShapedRecipe sr = null;
-		if (hm.containsKey("ResultData") && hm.containsKey("ResultDamage")) {
-			sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity,
-					((Integer) hm.get("ResultDamage")).shortValue(),
-					((Integer) hm.get("ResultData")).byteValue()));
+		//Try to load ResultData and ResultDamage
+		try {
+			if (hm.containsKey("ResultData") && hm.containsKey("ResultDamage")) {
+				sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity,
+						((Integer) hm.get("ResultDamage")).shortValue(),
+						((Integer) hm.get("ResultData")).byteValue()));
+			}
+			if (hm.containsKey("ResultDamage")) {
+				sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity,
+						((Integer) hm.get("ResultDamage")).shortValue()));
+			} else if (hm.containsKey("ResultData")) {
+				sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity,
+						((Integer) hm.get("ResultData")).byteValue()));
+			} else {
+				sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity));
+			}
+		} catch (Exception e) {
+			log.severe(pluginName + " - error parsing ResultData or Damage in record ID " + resultID);
+			return;
 		}
-		if (hm.containsKey("ResultDamage")) {
-			sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity,
-					((Integer) hm.get("ResultDamage")).shortValue()));
-		} else if (hm.containsKey("ResultData")) {
-			sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity,
-					((Integer) hm.get("ResultData")).byteValue()));
-		} else {
-			sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity));
-		}
+
 		String[] strs = new String[chars[0].length];
 		for (int y = 0; y < chars[0].length; y++) {
 			String str = "";
@@ -173,43 +199,62 @@ public class CustomCrafting extends JavaPlugin {
 	//Load a shapeless recipe
 	@SuppressWarnings("unchecked")
 	public void doShapeless(HashMap<String, Object> hm) {
-		Integer resultID = (Integer) hm.get("Result");
-		Integer resultQuantity = (Integer) hm.get("Quantity");
-		ShapelessRecipe sr;
-		if (hm.containsKey("ResultData") && hm.containsKey("ResultDamage")) {
-			sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity,
-					((Integer) hm.get("ResultDamage")).shortValue(),
-					((Integer) hm.get("ResultData")).byteValue()));
-		} else if (hm.containsKey("ResultDamage")) {
-			sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity,
-					((Integer) hm.get("ResultDamage")).shortValue()));
-		} else if (hm.containsKey("ResultDamage")) {
-			sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity,
-					((Integer) hm.get("ResultData")).byteValue()));
-		} else {
-			sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity));
+		Integer resultID;
+		Integer resultQuantity;
+		try {
+		resultID = (Integer) hm.get("Result");
+		resultQuantity = (Integer) hm.get("Quantity");
+		} catch (Exception e) {
+			log.severe(pluginName + " - ERROR result found with non-integer resultID, or Quantity, please fix record with name: " + hm.get("Result"));
+			return;
+		}
+		ShapelessRecipe sr = null;
+		//Try to load Durability data in - spit an error if there's any sort of error
+		try {
+			if (hm.containsKey("ResultData") && hm.containsKey("ResultDamage")) {
+				sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity,
+						((Integer) hm.get("ResultDamage")).shortValue(),
+						((Integer) hm.get("ResultData")).byteValue()));
+			} else if (hm.containsKey("ResultDamage")) {
+				sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity,
+						((Integer) hm.get("ResultDamage")).shortValue()));
+			} else if (hm.containsKey("ResultDamage")) {
+				sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity,
+						((Integer) hm.get("ResultData")).byteValue()));
+			} else {
+				sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity));
+			}
+		} catch (Exception e) {
+			log.severe(pluginName + " - error parsing ResultData or Damage in record ID " + resultID);
+			return;
 		}
 		HashMap<Integer, Integer> mar = null;
 		HashMap<Integer, Byte> data = null;
 		boolean dv = hm.containsKey("DataValues");
-		if (dv) {
-			mar = ids((HashMap<Integer, String>) hm.get("Materials"));
-			data = data((HashMap<Integer, String>) hm.get("Materials"));
-		} else {
-			mar = (HashMap<Integer, Integer>) hm.get("Materials");
-		}
-		for (Integer i : mar.keySet()) {
+		//Try to load Material data.
+		try {
 			if (dv) {
-				sr.addIngredient(mar.get(i), new MaterialData(Integer
-						.valueOf(i), data.get(i)));
+				mar = ids((HashMap<Integer, String>) hm.get("Materials"));
+				data = data((HashMap<Integer, String>) hm.get("Materials"));
 			} else {
-				sr.addIngredient(mar.get(i), new MaterialData(Integer
-						.valueOf(i)));
+				mar = (HashMap<Integer, Integer>) hm.get("Materials");
 			}
+			for (Integer i : mar.keySet()) {
+				if (dv) {
+					sr.addIngredient(mar.get(i), new MaterialData(Integer
+							.valueOf(i), data.get(i)));
+				} else {
+					sr.addIngredient(mar.get(i), new MaterialData(Integer
+							.valueOf(i)));
+				}
+			}
+		} catch (Exception e) {
+			log.severe(pluginName + " - error parsing Materials in record ID " + resultID);
+			return;
 		}
-
 		this.getServer().addRecipe(sr);
 	}
+
 	//Shapeless ids
 	public HashMap<Integer, Integer> ids(HashMap<Integer, String> arg) {
 		HashMap<Integer, Integer> out = new HashMap<Integer, Integer>();
@@ -218,6 +263,7 @@ public class CustomCrafting extends JavaPlugin {
 		}
 		return out;
 	}
+
 	//Shapeless data
 	public HashMap<Integer, Byte> data(HashMap<Integer, String> hashMap) {
 		HashMap<Integer, Byte> out = new HashMap<Integer, Byte>();
@@ -227,6 +273,7 @@ public class CustomCrafting extends JavaPlugin {
 		}
 		return out;
 	}
+
 	//Shaped ids
 	public ArrayList<ArrayList<Integer>> ids(ArrayList<ArrayList<String>> ar) {
 		ArrayList<ArrayList<Integer>> tb = new ArrayList<ArrayList<Integer>>();
@@ -239,6 +286,7 @@ public class CustomCrafting extends JavaPlugin {
 		}
 		return tb;
 	}
+
 	//Shaped data
 	public ArrayList<ArrayList<Byte>> data(ArrayList<ArrayList<String>> ar) {
 		ArrayList<ArrayList<Byte>> tb = new ArrayList<ArrayList<Byte>>();
@@ -248,41 +296,54 @@ public class CustomCrafting extends JavaPlugin {
 				tb.get(x).add(
 						y,
 						(Integer.valueOf(ar.get(x).get(y).split("/")[1]))
-								.byteValue());
+						.byteValue());
 			}
 		}
 		return tb;
 	}
+
 	//Load a furnace recipe
 	public void doFurnace(HashMap<String, Object> hm) {
-		Integer resultID = (Integer) hm.get("Result");
-		Integer resultQuantity = (Integer) hm.get("Quantity");
-		Integer source = (Integer) hm.get("Source");
+		Integer resultID;
+		Integer resultQuantity;
+		Integer source;
+		try {
+			resultID = (Integer) hm.get("Result");
+			resultQuantity = (Integer) hm.get("Quantity");
+			source = (Integer) hm.get("Source");
+		} catch (Exception e) {
+			log.severe(pluginName + " - ERROR result found with non-integer resultID, Quantity, or Source please fix record with name: " + hm.get("Result"));
+			return;
+		}
 		FurnaceRecipe fr;
 		ItemStack is;
-		if (hm.containsKey("ResultData")) {
-			is = new ItemStack(resultID, resultQuantity, ((Integer) hm
-					.get("ResultData")).byteValue());
-		} else {
-			is = new ItemStack(resultID, resultQuantity);
-		}
-		if (hm.containsKey("ResultDamage")) {
-			is.setDurability((Short) hm.get("ResultDamage"));
-		}
-		if (hm.containsKey("SourceData")) {
-			MaterialData md = new MaterialData(source, ((Integer) hm
-					.get("SourceData")).byteValue());
-			ItemStack tmp = md.toItemStack();
-			tmp.setDurability(((Integer) hm.get("SourceData")).byteValue());
-			md = tmp.getData();
-			md.setData(((Integer) hm.get("SourceData")).byteValue());
-			fr = new FurnaceRecipe(is, md);
-			fr.setInput(md);
+		try {
+			if (hm.containsKey("ResultData")) {
+				is = new ItemStack(resultID, resultQuantity, ((Integer) hm
+						.get("ResultData")).byteValue());
+			} else {
+				is = new ItemStack(resultID, resultQuantity);
+			}
+			if (hm.containsKey("ResultDamage")) {
+				is.setDurability((Short) hm.get("ResultDamage"));
+			}
+			if (hm.containsKey("SourceData")) {
+				MaterialData md = new MaterialData(source, ((Integer) hm
+						.get("SourceData")).byteValue());
+				ItemStack tmp = md.toItemStack();
+				tmp.setDurability(((Integer) hm.get("SourceData")).byteValue());
+				md = tmp.getData();
+				md.setData(((Integer) hm.get("SourceData")).byteValue());
+				fr = new FurnaceRecipe(is, md);
+				fr.setInput(md);
 
-		} else {
-			fr = new FurnaceRecipe(is, new MaterialData(source));
+			} else {
+				fr = new FurnaceRecipe(is, new MaterialData(source));
+			}
+			this.getServer().addRecipe(fr);
+		} catch (Exception e) {
+			log.severe(pluginName + " - error loading furnace recipe ID " + resultID);
 		}
-		this.getServer().addRecipe(fr);
 	}
 
 	public void onDisable() {
