@@ -2,6 +2,7 @@ package nickguletskii200.CustomCrafting;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.logging.Logger;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -20,6 +21,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class CustomCrafting extends JavaPlugin {
 	Logger log;
 	private String pluginName;
+	private int loadedRecipes = 0;
+	private int totalRecipes = 0;
 	// private PermissionHandler Permissions;
 	public CustomCrafting() {
 		super();
@@ -58,32 +61,36 @@ public class CustomCrafting extends JavaPlugin {
 		pluginName = "[" + this.getDescription().getName() + "]";
 		RecipeList rl = new RecipeList();
 		rl.load();
-		for (HashMap<String, Object> hm : rl.values()) {
+		Iterator<String> iter = rl.keySet().iterator();
+		while (iter.hasNext()) {
+			totalRecipes++;
+			String recordName = iter.next();
+			HashMap<String, Object> hm = rl.get(recordName);
 			if (hm.containsKey("Type")) {
 				if (hm.get("Type").equals("Shaped")) {
-					doShaped(hm);
+					doShaped(hm, recordName);
 				} else if (hm.get("Type").equals("Shapeless")) {
-					doShapeless(hm);
+					doShapeless(hm, recordName);
 				} else if (hm.get("Type").equals("Furnace")) {
-					doFurnace(hm);
+					doFurnace(hm, recordName);
 				}
 			} else {
-				doShaped(hm);
+				doShaped(hm, recordName);
 			}
 		}
-
+		log.info(pluginName + " - " + loadedRecipes + " of " + totalRecipes + " recipes were loaded successfully.");
 		log.info(pluginName + " - v" + getDescription().getVersion() + " by " + getDescription().getAuthors() + " enabled!");
 	}
 	//Load a shaped recipe
 	@SuppressWarnings("unchecked")
-	public void doShaped(HashMap<String, Object> hm) {
+	public void doShaped(HashMap<String, Object> hm, String recordName) {
 		Integer resultID;
 		Integer resultQuantity;
 		try {
 		resultID = (Integer) hm.get("Result");
 		resultQuantity = (Integer) hm.get("Quantity");
 		} catch (Exception e) {
-			log.severe(pluginName + " - ERROR result found with non-integer resultID, or Quantity, please fix record with name: " + hm.get("Result"));
+			log.severe(pluginName + " - ERROR result found with non-integer resultID, or Quantity. Please fix recipe named: " + recordName);
 			return;
 		}
 		//Create our variables here.
@@ -105,7 +112,7 @@ public class CustomCrafting extends JavaPlugin {
 			}
 			shape = rotateArray(shape);
 		} catch (Exception e) {
-			log.severe(pluginName + " error parsing shape data in record ID " + resultID);
+			log.severe(pluginName + " error parsing shape data in recipe named: " + recordName);
 			return;
 		}
 
@@ -158,7 +165,7 @@ public class CustomCrafting extends JavaPlugin {
 				sr = new ShapedRecipe(new ItemStack(resultID, resultQuantity));
 			}
 		} catch (Exception e) {
-			log.severe(pluginName + " - error parsing ResultData or Damage in record ID " + resultID);
+			log.severe(pluginName + " - error parsing ResultData or Damage in recipe named: " + recordName);
 			return;
 		}
 
@@ -195,17 +202,18 @@ public class CustomCrafting extends JavaPlugin {
 			}
 		}
 		this.getServer().addRecipe(sr);
+		loadedRecipes++;
 	}
 	//Load a shapeless recipe
 	@SuppressWarnings("unchecked")
-	public void doShapeless(HashMap<String, Object> hm) {
+	public void doShapeless(HashMap<String, Object> hm, String recordName) {
 		Integer resultID;
 		Integer resultQuantity;
 		try {
 		resultID = (Integer) hm.get("Result");
 		resultQuantity = (Integer) hm.get("Quantity");
 		} catch (Exception e) {
-			log.severe(pluginName + " - ERROR result found with non-integer resultID, or Quantity, please fix record with name: " + hm.get("Result"));
+			log.severe(pluginName + " - ERROR result found with non-integer resultID, or Quantity, please fix recipe named: " + recordName);
 			return;
 		}
 		ShapelessRecipe sr = null;
@@ -225,7 +233,7 @@ public class CustomCrafting extends JavaPlugin {
 				sr = new ShapelessRecipe(new ItemStack(resultID, resultQuantity));
 			}
 		} catch (Exception e) {
-			log.severe(pluginName + " - error parsing ResultData or Damage in record ID " + resultID);
+			log.severe(pluginName + " - error parsing ResultData or Damage in recipe named: " + recordName);
 			return;
 		}
 		HashMap<Integer, Integer> mar = null;
@@ -249,10 +257,11 @@ public class CustomCrafting extends JavaPlugin {
 				}
 			}
 		} catch (Exception e) {
-			log.severe(pluginName + " - error parsing Materials in record ID " + resultID);
+			log.severe(pluginName + " - error parsing Materials in recipe named: " + recordName);
 			return;
 		}
 		this.getServer().addRecipe(sr);
+		loadedRecipes++;
 	}
 
 	//Shapeless ids
@@ -303,7 +312,7 @@ public class CustomCrafting extends JavaPlugin {
 	}
 
 	//Load a furnace recipe
-	public void doFurnace(HashMap<String, Object> hm) {
+	public void doFurnace(HashMap<String, Object> hm, String recordName) {
 		Integer resultID;
 		Integer resultQuantity;
 		Integer source;
@@ -312,7 +321,7 @@ public class CustomCrafting extends JavaPlugin {
 			resultQuantity = (Integer) hm.get("Quantity");
 			source = (Integer) hm.get("Source");
 		} catch (Exception e) {
-			log.severe(pluginName + " - ERROR result found with non-integer resultID, Quantity, or Source please fix record with name: " + hm.get("Result"));
+			log.severe(pluginName + " - ERROR result found with non-integer resultID, Quantity, or Source please fix recipe named: " + recordName);
 			return;
 		}
 		FurnaceRecipe fr;
@@ -341,8 +350,9 @@ public class CustomCrafting extends JavaPlugin {
 				fr = new FurnaceRecipe(is, new MaterialData(source));
 			}
 			this.getServer().addRecipe(fr);
+			loadedRecipes++;
 		} catch (Exception e) {
-			log.severe(pluginName + " - error loading furnace recipe ID " + resultID);
+			log.severe(pluginName + " - error loading furnace recipe named: " + recordName);
 		}
 	}
 
