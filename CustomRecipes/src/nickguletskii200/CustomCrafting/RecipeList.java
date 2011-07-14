@@ -4,9 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
 
 import org.yaml.snakeyaml.Yaml;
@@ -16,21 +14,6 @@ public class RecipeList extends HashMap<String, HashMap<String, Object>> {
 	 * 
 	 */
 	private static final long serialVersionUID = -5408447074107302872L;
-
-	public void dump() {
-		Yaml yaml = new Yaml();
-		String out = yaml.dump(this);
-		try {
-			PrintWriter pw = new PrintWriter(new FileWriter("plugins"
-					+ File.separator + "CustomCrafting" + File.separator
-					+ "recipelist.yml"));
-			pw.print(out);
-			pw.close();
-		} catch (IOException e) {
-			System.out.println("IO Exception, could not save spyer data. \n"
-					+ e.getMessage());
-		}
-	}
 
 	@SuppressWarnings("unchecked")
 	public void load() {

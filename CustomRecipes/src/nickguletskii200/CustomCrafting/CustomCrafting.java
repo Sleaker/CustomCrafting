@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.logging.Logger;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
@@ -357,11 +355,7 @@ public class CustomCrafting extends JavaPlugin {
 	}
 
 	public void onDisable() {
-
+		
 	}
 
-	public boolean onCommand(CommandSender sender, Command command,
-			java.lang.String label, java.lang.String[] args) {
-		return false;
-	}
 }
